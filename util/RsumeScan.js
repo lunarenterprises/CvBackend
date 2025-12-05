@@ -1,7 +1,7 @@
 const formidable = require("formidable");
 const fs = require("fs");
 const pdfParse = require("@cedrugs/pdf-parse");
-const pdfjsLib = require("pdfjs-dist");
+const pdfjsLib = require("pdfjs-dist"); // ✅ Works perfectly with v3.11.174
 
 const MANDATORY_SECTIONS = [
   "PROFESSIONAL SUMMARY",
@@ -35,7 +35,7 @@ class RezoonATSScorer {
   async scan(filePath) {
     try {
       const dataBuffer = fs.readFileSync(filePath);
-      const data = await pdfParse(dataBuffer); // ✅ Now works perfectly
+      const data = await pdfParse(dataBuffer);
       this.text = data.text || "";
       this.lines = this.text
         .split("\n")
@@ -82,10 +82,8 @@ class RezoonATSScorer {
 
   async detectPhoto(filePath) {
     try {
-      const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
-      
       const pdfData = fs.readFileSync(filePath);
-      const uint8Data = new Uint8Array(pdfData); // ✅ Buffer → Uint8Array [web:78]
+      const uint8Data = new Uint8Array(pdfData);
       const pdf = await pdfjsLib.getDocument({ data: uint8Data }).promise;
 
       const page = await pdf.getPage(1);
@@ -129,7 +127,6 @@ class RezoonATSScorer {
     }
     return false;
   }
-
 
   checkRezoonTemplate() {
     const markers = ["Inter", "Size 12", "size 8.6", "50–80 words"];
