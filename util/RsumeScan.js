@@ -235,7 +235,8 @@ module.exports = async (req, res) => {
     }
 
     const filename = file.newFilename; // formidable v3 uses newFilename
-    const pdfUrl = `https://lunarsenterprises.com:7005/uploads/${filename}`;
+    const baseUrl = process.env.APP_URL || "https://lunarsenterprises.com:7005";
+    const pdfUrl = `${baseUrl}/uploads/${filename}`;
 
     const scorer = new RezoonATSScorer();
     const result = await scorer.scan(filePath);
