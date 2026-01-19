@@ -48,12 +48,7 @@ class RezoonATSScorer {
       this.applyAllRules();
       this.applyHardCapsAndBonus();
 
-      // Remove temp file (best-effort)
-      try {
-        fs.unlinkSync(filePath);
-      } catch (e) {
-        console.log("Temp file cleanup error:", e.message);
-      }
+
 
       const finalScore = Math.max(0, Math.min(100, this.score));
 
@@ -213,7 +208,20 @@ class RezoonATSScorer {
 }
 
 module.exports = async (req, res) => {
-  const form = new formidable.IncomingForm();
+  // Ensure uploads directory exists
+  const uploadDir = "uploads";
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+  }
+
+  const form = new formidable.IncomingForm({
+    uploadDir: uploadDir,
+    keepExtensions: true,
+    filename: (name, ext, part, form) => {
+      return `${Date.now()}_${part.originalFilename.replace(/\s+/g, "_")}`;
+    },
+  });
+
   form.parse(req, async (err, fields, files) => {
     if (err || !files.cv) {
       return res.status(400).json({ error: "Upload file with key: cv" });
@@ -226,8 +234,16 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: "Invalid uploaded file" });
     }
 
+    const filename = file.newFilename; // formidable v3 uses newFilename
+    const pdfUrl = `https://lunarsenterprises.com:7005/uploads/${filename}`;
+
     const scorer = new RezoonATSScorer();
     const result = await scorer.scan(filePath);
-    res.json(result);
+
+    // Merge result with pdfUrl
+    res.json({
+      ...result,
+      pdfUrl,
+    });
   });
 };

@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/scan", resumeRoute);
+app.use("/uploads", express.static("uploads"));
 
 // Home Page
 app.get("/", (req, res) => {

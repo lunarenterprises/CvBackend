@@ -4,7 +4,8 @@
   "main": "cvscan.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon cvscan.js"
+    "start": "nodemon cvscan.js",
+    "dev": "nodemon cvscan.js"
   },
   "keywords": [],
   "author": "",

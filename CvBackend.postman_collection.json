@@ -1,0 +1,61 @@
+{
+    "info": {
+        "_postman_id": "c7a8c4f1-5b9e-4a6d-8e4f-3c5d7e8b9f0a",
+        "name": "CvBackend",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Scan Resume",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "formdata",
+                    "formdata": [
+                        {
+                            "key": "cv",
+                            "type": "file",
+                            "src": []
+                        }
+                    ]
+                },
+                "url": {
+                    "raw": "{{base_url}}/scan/resume",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        "scan",
+                        "resume"
+                    ]
+                }
+            },
+            "response": []
+        },
+        {
+            "name": "Home",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{base_url}}/",
+                    "host": [
+                        "{{base_url}}"
+                    ],
+                    "path": [
+                        ""
+                    ]
+                }
+            },
+            "response": []
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:7005",
+            "type": "string"
+        }
+    ]
+}
