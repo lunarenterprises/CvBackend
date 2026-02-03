@@ -27,7 +27,7 @@ class RezoonATSScorer {
     this.issues = [];
     this.hasPhoto = false;
     this.hasColoredBG = false;
-    this.isRezoonTemplate = false;
+    this.hasInterFont = false;
     this.text = "";
     this.lines = [];
   }
@@ -44,6 +44,7 @@ class RezoonATSScorer {
 
       this.hasPhoto = await this.detectPhoto(filePath);
       this.hasColoredBG = await this.detectColoredBackground(filePath);
+      this.hasInterFont = await this.detectFonts(filePath); // New Check
       this.checkRezoonTemplate();
       this.applyAllRules();
       this.applyHardCapsAndBonus();
@@ -59,6 +60,7 @@ class RezoonATSScorer {
         isRezoonTemplate: this.isRezoonTemplate,
         hasPhoto: this.hasPhoto,
         hasColoredBackground: this.hasColoredBG,
+        hasInterFont: this.hasInterFont,
         message:
           finalScore >= 90
             ? "PASSED! 90+ Only with Official Rezoon Template"
@@ -123,6 +125,40 @@ class RezoonATSScorer {
     return false;
   }
 
+  async detectFonts(filePath) {
+    try {
+      const pdfData = fs.readFileSync(filePath);
+      const uint8Data = new Uint8Array(pdfData);
+      const pdf = await pdfjsLib.getDocument({ data: uint8Data }).promise;
+
+      for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const fontFaces = new Set();
+
+        // Collect all font references from text items
+        for (const item of textContent.items) {
+          if (item.fontName) {
+            const font = page.commonObjs.get(item.fontName);
+            if (font && font.name) {
+              fontFaces.add(font.name);
+            }
+          }
+        }
+
+        // check if any font is part of Inter family
+        for (const fontName of fontFaces) {
+          if (fontName.toLowerCase().includes("inter")) {
+            return true;
+          }
+        }
+      }
+    } catch (err) {
+      console.log("Font detection error:", err.message);
+    }
+    return false; // No Inter found
+  }
+
   checkRezoonTemplate() {
     const markers = ["Inter", "Size 12", "size 8.6", "50–80 words"];
     const hasAll = markers.every((m) => this.text.includes(m));
@@ -162,15 +198,43 @@ class RezoonATSScorer {
       }
     });
 
-    // Section order
-    let last = -1;
+    // Section order (Strict Check)
+    const positions = {};
     CORRECT_ORDER.forEach((sec) => {
       const idx = this.lines.findIndex((l) => l.toUpperCase().includes(sec));
-      if (idx !== -1 && idx < last) {
+      if (idx !== -1) positions[sec] = idx;
+    });
+
+    CORRECT_ORDER.forEach((sec, expectedIndex) => {
+      if (positions[sec] === undefined) return;
+
+      const currentPos = positions[sec];
+      let isWrong = false;
+
+      // Check predecessors (should be above)
+      for (let i = 0; i < expectedIndex; i++) {
+        const pred = CORRECT_ORDER[i];
+        if (positions[pred] !== undefined && positions[pred] > currentPos) {
+          isWrong = true;
+          break;
+        }
+      }
+
+      // Check successors (should be below)
+      if (!isWrong) {
+        for (let i = expectedIndex + 1; i < CORRECT_ORDER.length; i++) {
+          const succ = CORRECT_ORDER[i];
+          if (positions[succ] !== undefined && positions[succ] < currentPos) {
+            isWrong = true;
+            break;
+          }
+        }
+      }
+
+      if (isWrong) {
         this.score -= 5;
         this.issues.push(`Wrong order: ${sec} → -5`);
       }
-      if (idx !== -1) last = idx;
     });
 
     const hasBullets = this.lines.some((l) => /^[•●◦\-–]/.test(l));
@@ -178,7 +242,7 @@ class RezoonATSScorer {
       this.score -= 5;
       this.issues.push("No bullet points → -5");
     }
-    if (!this.text.includes("Inter")) {
+    if (!this.hasInterFont) {
       this.score -= 5;
       this.issues.push("Font not Inter → -5");
     }
